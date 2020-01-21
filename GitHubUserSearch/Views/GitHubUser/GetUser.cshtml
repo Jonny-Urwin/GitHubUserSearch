@@ -1,0 +1,95 @@
+﻿@model GitHubUserSearch.Models.GitHubUserViewModel
+
+@{
+    ViewBag.Title = "GetUser";
+}
+
+<h2>Get User</h2>
+
+<div class="row">
+    <div class="col-sm-4">
+        <div class="form-group">
+            @Html.TextBoxFor(x => x.UserName)
+        </div>
+        <span class="form-group">
+            <button id="Search" class="btn btn-default">Search</button>
+        </span>
+    </div>
+</div>
+
+<div id="loadingDiv" style="display:none">
+    Loading...<img src="~/Content/spin.gif" />
+</div>
+<div id="userInfo" class="row" style="display: none">
+    <hr />
+    <div class="col-sm-4">
+        <p>
+            <img id="AvatarUrl" src="" alt="" style="width: 100%;" />
+        </p>
+    </div>
+    <div class="col-sm-8">
+        <h2>
+            User Name : <label id="UserNameLbl"></label>
+        </h2>
+        <p>Location : <label id="Location"></label></p>
+        <h3>Top <span id="repoCount"></span> repositories</h3>
+        <div id="GitHubRepositories"></div>
+    </div>
+</div>
+<div id="notFound"></div>
+
+
+<script>
+    $(document).ready(function() {
+        // Add the page method call as an onclick handler for the div.
+        $("#Search").click(function () {
+            var repos = "";
+            var repoCount = 0;
+            $('#userInfo').hide();
+            $('#notFound').hide();
+            $.ajax({ type: "POST",
+                url: '@Url.Action("GetUser", "api/GitHubService")',
+                data: JSON.stringify({ UserName: $("#UserName").val()}),
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                })
+                .done(function (userdata) {
+                    if (userdata.result) {
+                        var name = userdata.data.UserName;
+                        $('#UserNameLbl').text(name);
+                            $('#Location').text(userdata.data.Location);
+                            $('#AvatarUrl').attr("src", userdata.data.AvatarUrl);
+                            $.each(userdata.data.GitHubRepositories, function (index, value) {
+                                repos = repos + '<li><a href="' + value.RepositoryUrl + '" target="_blank">' + value.RepositoryName + '(' + value.StarGazersCount +')'  + '</a></li>';
+                                repoCount = index;
+                            });
+                            $('#GitHubRepositories').html("<ul>" + repos + "</ul>");
+                            $('#repoCount').html(repoCount + 1);
+                            $('#userInfo').show();
+                    }
+                    else {
+                        $('#notFound').html("User not found");
+                        $('#notFound').show();
+                    }
+                })
+                .fail(function () {
+                     $('#notFound').html("Failed");
+                     $('#notFound').show();
+             });
+        });
+
+        var $loading = $('#loadingDiv').hide();
+        $(document)
+            .ajaxStart(function () {
+                $loading.show();
+        })
+            .ajaxStop(function () {
+                $loading.hide();
+        });
+    });
+
+
+</script>
+
+
+
